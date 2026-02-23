@@ -20,6 +20,8 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
+logging.getLogger("telethon").setLevel(logging.WARNING)
+
 API_ID = int(os.environ["API_ID"])
 API_HASH = os.environ["API_HASH"]
 CHAT_ID = int(os.environ["CHAT_ID"])
