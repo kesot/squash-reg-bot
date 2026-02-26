@@ -1,6 +1,6 @@
 import os
-import asyncio
 import logging
+from datetime import timedelta
 from logging.handlers import RotatingFileHandler
 
 from telethon import TelegramClient, events
@@ -67,20 +67,14 @@ async def handle_poll(event):
             options=[first_option],
         ))
         log.info("Voted successfully")
-        asyncio.get_event_loop().call_later(
-            60,
-            lambda: asyncio.ensure_future(_send_reminder(poll.poll.question)),
+        await client.send_message(
+            "me",
+            f"Voted on poll: {poll.poll.question}",
+            schedule=timedelta(minutes=1),
         )
+        log.info("Scheduled reminder to Saved Messages in 1 min")
     except Exception:
         log.exception("Failed to vote")
-
-
-async def _send_reminder(question):
-    try:
-        await client.send_message("me", f"Voted on poll: {question}")
-        log.info("Reminder sent to Saved Messages")
-    except Exception:
-        log.exception("Failed to send reminder")
 
 
 async def main():
