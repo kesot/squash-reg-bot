@@ -1,4 +1,5 @@
 import os
+import asyncio
 import logging
 from logging.handlers import RotatingFileHandler
 
@@ -26,6 +27,7 @@ API_ID = int(os.environ["API_ID"])
 API_HASH = os.environ["API_HASH"]
 CHAT_ID = int(os.environ["CHAT_ID"])
 TOPIC_ID = int(os.environ["TOPIC_ID"]) if os.environ.get("TOPIC_ID") else None
+POLL_AUTHOR_ID = 108966186
 
 SESSION_PATH = "/app/data/bot"
 
@@ -46,6 +48,10 @@ async def handle_poll(event):
             log.debug("Skipping — topic %s != %s", thread_id, TOPIC_ID)
             return
 
+    if event.message.from_id and getattr(event.message.from_id, 'user_id', None) != POLL_AUTHOR_ID:
+        log.debug("Skipping — author %s != %s", event.message.from_id, POLL_AUTHOR_ID)
+        return
+
     poll = event.message.poll
     if poll is None:
         log.debug("Skipping — not a poll")
@@ -61,8 +67,20 @@ async def handle_poll(event):
             options=[first_option],
         ))
         log.info("Voted successfully")
+        asyncio.get_event_loop().call_later(
+            60,
+            lambda: asyncio.ensure_future(_send_reminder(poll.poll.question)),
+        )
     except Exception:
         log.exception("Failed to vote")
+
+
+async def _send_reminder(question):
+    try:
+        await client.send_message("me", f"Voted on poll: {question}")
+        log.info("Reminder sent to Saved Messages")
+    except Exception:
+        log.exception("Failed to send reminder")
 
 
 async def main():
