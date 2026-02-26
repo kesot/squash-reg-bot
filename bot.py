@@ -27,7 +27,7 @@ API_ID = int(os.environ["API_ID"])
 API_HASH = os.environ["API_HASH"]
 CHAT_ID = int(os.environ["CHAT_ID"])
 TOPIC_ID = int(os.environ["TOPIC_ID"]) if os.environ.get("TOPIC_ID") else None
-POLL_AUTHOR_ID = 108966186
+POLL_AUTHOR_ID = int(os.environ.get("POLL_AUTHOR_ID", 0)) or None
 
 SESSION_PATH = "/app/data/bot"
 
@@ -48,7 +48,7 @@ async def handle_poll(event):
             log.debug("Skipping — topic %s != %s", thread_id, TOPIC_ID)
             return
 
-    if event.message.from_id and getattr(event.message.from_id, 'user_id', None) != POLL_AUTHOR_ID:
+    if POLL_AUTHOR_ID and event.message.from_id and getattr(event.message.from_id, 'user_id', None) != POLL_AUTHOR_ID:
         log.debug("Skipping — author %s != %s", event.message.from_id, POLL_AUTHOR_ID)
         return
 
