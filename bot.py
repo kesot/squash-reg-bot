@@ -26,7 +26,11 @@ logging.getLogger("telethon").setLevel(logging.WARNING)
 API_ID = int(os.environ["API_ID"])
 API_HASH = os.environ["API_HASH"]
 CHAT_ID = int(os.environ["CHAT_ID"])
-TOPIC_ID = int(os.environ["TOPIC_ID"]) if os.environ.get("TOPIC_ID") else None
+TOPIC_IDS = (
+    {int(t) for t in os.environ["TOPIC_ID"].split(",")}
+    if os.environ.get("TOPIC_ID")
+    else None
+)
 POLL_AUTHOR_ID = int(os.environ.get("POLL_AUTHOR_ID", 0)) or None
 
 SESSION_PATH = "/app/data/bot"
@@ -38,14 +42,14 @@ client = TelegramClient(SESSION_PATH, API_ID, API_HASH)
 async def handle_poll(event):
     log.debug("New message in chat %d, msg_id=%d", event.chat_id, event.message.id)
 
-    if TOPIC_ID is not None:
+    if TOPIC_IDS is not None:
         reply_to = event.message.reply_to
         if not reply_to or getattr(reply_to, "forum_topic", False) is False:
             log.debug("Skipping — not in target topic")
             return
         thread_id = reply_to.reply_to_top_id or reply_to.reply_to_msg_id
-        if thread_id != TOPIC_ID:
-            log.debug("Skipping — topic %s != %s", thread_id, TOPIC_ID)
+        if thread_id not in TOPIC_IDS:
+            log.debug("Skipping — topic %s not in %s", thread_id, TOPIC_IDS)
             return
 
     if POLL_AUTHOR_ID and event.message.from_id and getattr(event.message.from_id, 'user_id', None) != POLL_AUTHOR_ID:
@@ -82,9 +86,9 @@ async def main():
     await client.start()
     me = await client.get_me()
     log.info("Logged in as %s (id=%d)", me.first_name, me.id)
-    topic_info = f", topic {TOPIC_ID}" if TOPIC_ID else ""
+    topic_info = f", topics {TOPIC_IDS}" if TOPIC_IDS else ""
     log.info("Listening for polls in chat %d%s", CHAT_ID, topic_info)
-    log.debug("Config: API_ID=%s, CHAT_ID=%s, TOPIC_ID=%s", API_ID, CHAT_ID, TOPIC_ID)
+    log.debug("Config: API_ID=%s, CHAT_ID=%s, TOPIC_IDS=%s", API_ID, CHAT_ID, TOPIC_IDS)
     await client.run_until_disconnected()
 
 
