@@ -61,14 +61,21 @@ async def handle_poll(event):
         log.debug("Skipping — not a poll")
         return
 
-    first_option = poll.poll.answers[0].option
-    log.info("Poll detected: %s — voting for first option", poll.poll.question)
+    target = next(
+        (a for a in poll.poll.answers if "иду" in a.text.text.lower()),
+        None,
+    )
+    if target is None:
+        log.debug("Skipping — no 'иду' option in poll: %s", poll.poll.question)
+        return
+
+    log.info("Poll detected: %s — voting for %r", poll.poll.question, target.text.text)
 
     try:
         await client(SendVoteRequest(
             peer=event.chat_id,
             msg_id=event.message.id,
-            options=[first_option],
+            options=[target.option],
         ))
         log.info("Voted successfully")
         await client.send_message(
