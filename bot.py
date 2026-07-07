@@ -1,4 +1,5 @@
 import os
+import asyncio
 import logging
 from datetime import timedelta
 from logging.handlers import RotatingFileHandler
@@ -78,14 +79,26 @@ async def handle_poll(event):
             options=[target.option],
         ))
         log.info("Voted successfully")
+    except Exception:
+        log.exception("Failed to vote")
+        return
+
+    # Fire-and-forget the reminder so it never sits in the vote critical path.
+    # Awaiting it here would delay the next poll's handler when updates are
+    # dispatched sequentially (e.g. two polls posted back-to-back).
+    asyncio.create_task(schedule_reminder(poll.poll.question))
+
+
+async def schedule_reminder(question):
+    try:
         await client.send_message(
             "me",
-            f"Voted on poll: {poll.poll.question}",
+            f"Voted on poll: {question}",
             schedule=timedelta(minutes=1),
         )
         log.info("Scheduled reminder to Saved Messages in 1 min")
     except Exception:
-        log.exception("Failed to vote")
+        log.exception("Failed to schedule reminder")
 
 
 async def main():
