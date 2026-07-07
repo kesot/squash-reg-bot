@@ -1,7 +1,7 @@
 import os
 import asyncio
 import logging
-from datetime import timedelta
+from datetime import timedelta, datetime, timezone
 from logging.handlers import RotatingFileHandler
 
 from telethon import TelegramClient, events
@@ -72,13 +72,20 @@ async def handle_poll(event):
 
     log.info("Poll detected: %s — voting for %r", poll.poll.question, target.text.text)
 
+    # Measure server-side delivery lag: how long between Telegram stamping the
+    # poll message and us actually processing it. message.date is UTC, 1s res.
+    lag = (datetime.now(timezone.utc) - event.message.date).total_seconds()
+    log.info("Delivery lag (poll date -> handler): %.2fs", lag)
+
+    t0 = datetime.now(timezone.utc)
     try:
         await client(SendVoteRequest(
             peer=event.chat_id,
             msg_id=event.message.id,
             options=[target.option],
         ))
-        log.info("Voted successfully")
+        vote_ms = (datetime.now(timezone.utc) - t0).total_seconds() * 1000
+        log.info("Voted successfully (SendVote round-trip %.0fms)", vote_ms)
     except Exception:
         log.exception("Failed to vote")
         return
