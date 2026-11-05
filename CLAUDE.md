@@ -21,7 +21,7 @@ Telegram poll auto-voter userbot (Telethon). Monitors a specific chat/topic for 
 - `API_ID`, `API_HASH` — from my.telegram.org
 - `CHAT_ID` — target chat (e.g. `-1001880589294`)
 - `TOPIC_ID` — comma-separated forum topic ids (optional, e.g. `39,1740`)
-- `POLL_AUTHOR_ID` — only vote on polls from this user (optional, votes on all polls if unset)
+- `POLL_AUTHOR_ID` — comma-separated user ids; only vote on polls from these users (optional, votes on all polls if unset)
 
 ## Deployment
 
